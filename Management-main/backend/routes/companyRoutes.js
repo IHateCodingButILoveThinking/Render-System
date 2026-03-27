@@ -74,18 +74,21 @@ export function registerCompanyRoutes(app) {
     if (!uid) return;
 
     const { companyId } = req.params;
-    const amount = Number(req.body.amount);
+    const amountInput = Number(req.body.amount);
     const paymentMethod = req.body.payment_method;
     const paymentDate = req.body.payment_date || new Date().toISOString().split('T')[0];
     const note = req.body.note || null;
 
-    if (!Number.isFinite(amount) || amount <= 0) {
+    if (!Number.isFinite(amountInput) || amountInput <= 0) {
       return res.status(400).json({ error: 'Valid payment amount is required' });
     }
 
     if (!paymentMethod) {
       return res.status(400).json({ error: 'payment_method is required' });
     }
+
+    // Amounts are tracked in RMB. USD inputs are converted to RMB automatically.
+    const amount = paymentMethod === 'usd' ? amountInput * 7 : amountInput;
 
     try {
       const sales = await db('sales as sale')

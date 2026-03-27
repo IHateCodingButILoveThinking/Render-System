@@ -1,0 +1,60 @@
+-- SQL Statements for Inventory Pro Database (PostgreSQL)
+
+-- 1. Users Table
+-- Stores user profile and authentication mapping
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    uid VARCHAR(255) UNIQUE NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 2. Sellers Table
+-- Stores information about suppliers/sellers
+CREATE TABLE sellers (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) UNIQUE NOT NULL,
+    phone VARCHAR(255),
+    address TEXT,
+    "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 3. Companies Table
+-- Stores information about target companies (buyers)
+CREATE TABLE companies (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) UNIQUE NOT NULL,
+    contact_person VARCHAR(255),
+    phone VARCHAR(255),
+    "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 4. Products Table
+-- Main inventory and sales tracking table
+CREATE TABLE products (
+    id SERIAL PRIMARY KEY,
+    uid VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    color VARCHAR(255),
+    price DOUBLE PRECISION,
+    cost DOUBLE PRECISION NOT NULL,
+    "sellPrice" DOUBLE PRECISION NOT NULL,
+    "imageUrl" TEXT,
+    "sellerName" VARCHAR(255), -- References sellers.name
+    "sellerPhone" VARCHAR(255),
+    "purchaseDate" VARCHAR(255),
+    "returnCount" INTEGER DEFAULT 0,
+    "returnAmount" DOUBLE PRECISION DEFAULT 0,
+    "isPaidByCompany" BOOLEAN DEFAULT FALSE,
+    "isPaidToSeller" BOOLEAN DEFAULT FALSE,
+    "amountCollected" DOUBLE PRECISION DEFAULT 0,
+    payments TEXT, -- Stores JSON array of payments
+    "targetCompany" VARCHAR(255), -- References companies.name
+    quality VARCHAR(255),
+    "weightSold" DOUBLE PRECISION,
+    "pricePerTon" DOUBLE PRECISION,
+    "paidToSellerAmount" DOUBLE PRECISION DEFAULT 0,
+    "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

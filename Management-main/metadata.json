@@ -1,0 +1,5 @@
+{
+  "name": "Simple Inventory Manager",
+  "description": "A mobile-friendly inventory management app with product tracking, returns handling, supplier details, and AI-powered translation.",
+  "requestFramePermissions": ["camera"]
+}

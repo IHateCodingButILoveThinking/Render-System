@@ -49,7 +49,6 @@ const PAYMENT_METHOD_LABELS = {
 
 const QUALITY_OPTIONS = ["Best", "Good", "Normal", "Bad", "Worst"];
 const USD_EXCHANGE_RATE = 7;
-const SINGAPORE_TIMEZONE = "Asia/Singapore";
 
 function getCurrentDateInputValue() {
   const now = new Date();
@@ -178,170 +177,82 @@ const formatWeight = (value, lang = "en") =>
     maximumFractionDigits: 3,
   })} ${lang === "zh" ? "吨" : "tons"}`;
 
-const SheepBadgeIcon = ({ className = "" }) => (
+const TeslaBadgeIcon = ({ className = "" }) => (
   <svg viewBox="0 0 120 78" className={className} aria-hidden="true">
-    <g strokeLinecap="round" strokeLinejoin="round">
-      <ellipse cx="60" cy="66" rx="42" ry="4" fill="#000" opacity="0.07" />
-
-      <g transform="translate(29 38)">
-        <g fill="#fffdf8" stroke="#dbc8ad" strokeWidth="2">
-          <circle cx="0" cy="-8" r="8.5" />
-          <circle cx="-7" cy="-3" r="7.5" />
-          <circle cx="7" cy="-3" r="7.5" />
-          <circle cx="-2" cy="4" r="7.5" />
-          <circle cx="6" cy="4" r="7.5" />
-        </g>
-        <ellipse
-          cx="1.5"
-          cy="4.8"
-          rx="6.8"
-          ry="8"
-          fill="#f3ddc9"
-          stroke="#c8a88d"
-          strokeWidth="2"
-        />
-        <ellipse cx="-4.4" cy="0.9" rx="1.7" ry="2.4" fill="#c8a88d" />
-        <ellipse cx="7.6" cy="0.9" rx="1.7" ry="2.4" fill="#c8a88d" />
-        <circle cx="-0.8" cy="4.4" r="1.1" fill="#2f3137" />
-        <circle cx="3.8" cy="4.4" r="1.1" fill="#2f3137" />
-        <path
-          d="M0.2 8.5c1 .95 2.5.95 3.5 0"
-          stroke="#8a6150"
-          strokeWidth="1.4"
-        />
-        <rect
-          x="-2.3"
-          y="11.3"
-          width="2.6"
-          height="7.2"
-          rx="1.3"
-          fill="#d1af94"
-        />
-        <rect
-          x="3.1"
-          y="11.3"
-          width="2.6"
-          height="7.2"
-          rx="1.3"
-          fill="#d1af94"
-        />
-      </g>
-
-      <g transform="translate(60 35)">
-        <g fill="#fffdf8" stroke="#dbc8ad" strokeWidth="2.2">
-          <circle cx="0" cy="-10.5" r="10.5" />
-          <circle cx="-9" cy="-5" r="9" />
-          <circle cx="9" cy="-5" r="9" />
-          <circle cx="-3" cy="3.5" r="9" />
-          <circle cx="7" cy="3.5" r="9" />
-        </g>
-        <ellipse
-          cx="1.8"
-          cy="4.3"
-          rx="8.5"
-          ry="9.8"
-          fill="#f3ddc9"
-          stroke="#c8a88d"
-          strokeWidth="2.2"
-        />
-        <ellipse cx="-5.4" cy="-0.2" rx="2" ry="2.8" fill="#c8a88d" />
-        <ellipse cx="8.9" cy="-0.2" rx="2" ry="2.8" fill="#c8a88d" />
-        <circle cx="-0.8" cy="3.8" r="1.3" fill="#2f3137" />
-        <circle cx="4.7" cy="3.8" r="1.3" fill="#2f3137" />
-        <path
-          d="M0.4 8.7c1.2 1.1 3 1.1 4.2 0"
-          stroke="#8a6150"
-          strokeWidth="1.6"
-        />
-        <ellipse cx="-3.8" cy="7.3" rx="1.4" ry="1" fill="#f6b0c3" />
-        <ellipse cx="7.2" cy="7.3" rx="1.4" ry="1" fill="#f6b0c3" />
-        <rect
-          x="-2.1"
-          y="13.1"
-          width="3"
-          height="8.4"
-          rx="1.5"
-          fill="#d1af94"
-        />
-        <rect x="3.9" y="13.1" width="3" height="8.4" rx="1.5" fill="#d1af94" />
-      </g>
-
-      <g transform="translate(91 38)">
-        <g fill="#fffdf8" stroke="#dbc8ad" strokeWidth="2">
-          <circle cx="0" cy="-8" r="8.5" />
-          <circle cx="-7" cy="-3" r="7.5" />
-          <circle cx="7" cy="-3" r="7.5" />
-          <circle cx="-2" cy="4" r="7.5" />
-          <circle cx="6" cy="4" r="7.5" />
-        </g>
-        <ellipse
-          cx="1.5"
-          cy="4.8"
-          rx="6.8"
-          ry="8"
-          fill="#f3ddc9"
-          stroke="#c8a88d"
-          strokeWidth="2"
-        />
-        <ellipse cx="-4.4" cy="0.9" rx="1.7" ry="2.4" fill="#c8a88d" />
-        <ellipse cx="7.6" cy="0.9" rx="1.7" ry="2.4" fill="#c8a88d" />
-        <circle cx="-0.8" cy="4.4" r="1.1" fill="#2f3137" />
-        <circle cx="3.8" cy="4.4" r="1.1" fill="#2f3137" />
-        <path
-          d="M0.2 8.5c1 .95 2.5.95 3.5 0"
-          stroke="#8a6150"
-          strokeWidth="1.4"
-        />
-        <rect
-          x="-2.3"
-          y="11.3"
-          width="2.6"
-          height="7.2"
-          rx="1.3"
-          fill="#d1af94"
-        />
-        <rect
-          x="3.1"
-          y="11.3"
-          width="2.6"
-          height="7.2"
-          rx="1.3"
-          fill="#d1af94"
-        />
-      </g>
+    <g fill="none" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="8" y="10" width="104" height="58" rx="22" fill="#ffffff" />
+      <path
+        d="M22 25.2c11.4-4.9 23-7.1 38-7.1s26.6 2.2 38 7.1c-4.7 2.9-10.1 4.6-15.6 5.7-6.1-2.1-13.5-3.3-22.4-3.3s-16.3 1.2-22.4 3.3c-5.5-1.1-10.9-2.8-15.6-5.7Z"
+        fill="#e82127"
+      />
+      <path
+        d="M53.9 35.1c2-.3 4-.4 6.1-.4 2.2 0 4.2.1 6.1.4-1.5 7.9-2.6 19.9-3.1 36.1-.1 2.1-.1 4-.1 5.8h-5.8c0-1.8 0-3.7-.1-5.8-.5-16.2-1.6-28.2-3.1-36.1Z"
+        fill="#e82127"
+      />
+      <path
+        d="M40.3 38.3c5.8-1.7 12.5-2.5 19.7-2.5s13.9.8 19.7 2.5c-3.8 2.1-8.2 3.4-12.5 4.1-.9 5.3-1.5 13.2-1.8 23.8h-10.8c-.3-10.6-.9-18.5-1.8-23.8-4.3-.7-8.7-2-12.5-4.1Z"
+        fill="#e82127"
+      />
     </g>
   </svg>
 );
 
-function formatDateTimeInSingapore(value, lang = "en") {
+function formatLocalDate(value, lang = "en") {
   if (!value) return "-";
 
   const raw = String(value).trim();
-  const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(raw);
-  const parsed = isDateOnly ? new Date(`${raw}T00:00:00+08:00`) : new Date(raw);
+  const dashedDate = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const slashedDate = raw.match(/^(\d{4})\/(\d{2})\/(\d{2})$/);
+
+  let parsed;
+  if (dashedDate) {
+    parsed = new Date(
+      Number(dashedDate[1]),
+      Number(dashedDate[2]) - 1,
+      Number(dashedDate[3]),
+    );
+  } else if (slashedDate) {
+    parsed = new Date(
+      Number(slashedDate[1]),
+      Number(slashedDate[2]) - 1,
+      Number(slashedDate[3]),
+    );
+  } else {
+    parsed = new Date(raw);
+  }
 
   if (Number.isNaN(parsed.getTime())) return raw;
 
-  const locale = lang === "zh" ? "zh-CN" : "en-SG";
-  const options = isDateOnly
-    ? {
-        timeZone: SINGAPORE_TIMEZONE,
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      }
-    : {
-        timeZone: SINGAPORE_TIMEZONE,
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      };
+  const locale = lang === "zh" ? "zh-CN" : "en-AU";
+  return new Intl.DateTimeFormat(locale, {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(parsed);
+}
 
-  const formatted = new Intl.DateTimeFormat(locale, options).format(parsed);
-  return formatted;
+function formatLocalDateTime(value, lang = "en") {
+  if (!value) return "-";
+
+  const raw = String(value).trim();
+  if (!raw) return "-";
+
+  if (/^\d{4}[-/]\d{2}[-/]\d{2}$/.test(raw)) {
+    return formatLocalDate(raw, lang);
+  }
+
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return raw;
+
+  const locale = lang === "zh" ? "zh-CN" : "en-AU";
+  return new Intl.DateTimeFormat(locale, {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(parsed);
 }
 
 export default function App() {
@@ -690,7 +601,8 @@ function AppContent() {
   const formatWeightDisplay = (value) => formatWeight(value, lang);
   const formatPaymentAmountDisplay = (amount, method) =>
     formatPaymentAmount(amount, method, lang);
-  const formatDateDisplay = (value) => formatDateTimeInSingapore(value, lang);
+  const formatDateDisplay = (value) => formatLocalDate(value, lang);
+  const formatDateTimeDisplay = (value) => formatLocalDateTime(value, lang);
   const filteredLots = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     if (!query) return dashboard.lots;
@@ -1627,78 +1539,24 @@ function AppContent() {
         <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 sm:py-4">
           <div className="flex items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-[1.4rem] bg-gradient-to-br from-amber-100 via-orange-100 to-lime-100 shadow-sm">
-                <SheepBadgeIcon className="h-10 w-10" />
-              </div>
+              <img
+                src="/sz-logo.svg"
+                alt="Stocky globe logo"
+                className="h-10 w-10 shrink-0 object-contain"
+                draggable="false"
+              />
               <div className="min-w-0">
-                <div className="inline-flex max-w-full items-start gap-1">
-                  <h1 className="truncate text-lg font-black tracking-tight">
-                    {text.appTitle}
-                  </h1>
-                  <span className="mt-0.5 inline-flex shrink-0 items-center gap-1 rounded-full border border-emerald-200 bg-gradient-to-r from-emerald-200/95 via-emerald-100 to-sky-200/95 px-1.5 py-0.5 text-[8px] font-semibold tracking-wide text-emerald-900 shadow-sm">
-                    <span className="inline-flex h-3.5 w-6 items-center justify-center overflow-hidden rounded-full border border-white/70 bg-white/55">
-                      <svg
-                        viewBox="0 0 24 16"
-                        className="h-3.5 w-6"
-                        aria-hidden="true"
-                      >
-                        <defs>
-                          <linearGradient
-                            id="lakeGradient"
-                            x1="0"
-                            y1="0"
-                            x2="1"
-                            y2="1"
-                          >
-                            <stop offset="0%" stopColor="#67e8f9" />
-                            <stop offset="100%" stopColor="#0ea5e9" />
-                          </linearGradient>
-                        </defs>
-                        <path d="M0 12h24v4H0z" fill="url(#lakeGradient)" />
-                        <path d="M2 10l4-6 4 6z" fill="#16a34a" />
-                        <path d="M8 10l3.5-5 3.5 5z" fill="#15803d" />
-                        <path d="M14 10l3.5-4.5L21 10z" fill="#166534" />
-                        <path
-                          d="M8.7 11.2h4.6V8.9l-2.3-1.55-2.3 1.55z"
-                          fill="#f8fafc"
-                        />
-                        <path
-                          d="M8.3 8.95L11 7.05l2.7 1.9-.45.72H8.75z"
-                          fill="#111827"
-                        />
-                        <path
-                          d="M9.5 11.2h1.1V9.95H9.5zM11.4 11.2h1.1V9.95h-1.1z"
-                          fill="#d1d5db"
-                        />
-                        <path
-                          d="M8.1 8.55h5.8"
-                          stroke="#1f2937"
-                          strokeWidth="0.45"
-                          strokeLinecap="round"
-                        />
-                        <path
-                          d="M8.35 8.15h5.3"
-                          stroke="#111827"
-                          strokeWidth="0.35"
-                          strokeLinecap="round"
-                        />
-                        <path
-                          d="M1.5 13.2c1.6-.6 3.2-.6 4.8 0"
-                          stroke="#e0f2fe"
-                          strokeWidth="0.8"
-                          fill="none"
-                        />
-                        <path
-                          d="M6.5 13.2c1.6-.6 3.2-.6 4.8 0"
-                          stroke="#e0f2fe"
-                          strokeWidth="0.8"
-                          fill="none"
-                        />
-                      </svg>
-                    </span>
-                    {text.originTag ||
-                      (lang === "zh" ? "来自苏州" : "from SUZHOU")}
-                  </span>
+                <div className="inline-flex max-w-full items-start">
+                  <div className="inline-flex max-w-full items-start gap-1.5">
+                    <h1 className="truncate text-lg font-black tracking-tight">
+                      {text.appTitle}
+                    </h1>
+                    {text.originTag ? (
+                      <span className="relative -top-0.5 inline-flex shrink-0 items-center rounded-full border border-zinc-200 bg-white px-1.5 py-[1px] text-[6px] font-semibold uppercase tracking-[0.14em] text-zinc-500 shadow-sm">
+                        {text.originTag}
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1851,7 +1709,7 @@ function AppContent() {
                       {...props}
                       paymentMethodLabels={PAYMENT_METHOD_LABELS}
                       formatPaymentAmount={formatPaymentAmount}
-                      formatDateTime={formatDateTimeInSingapore}
+                      formatDateTime={formatDateTimeDisplay}
                     />
                   ),
                   paymentMethodOptions,
@@ -1916,6 +1774,7 @@ function AppContent() {
                   Button,
                   QuickChoicePills,
                   formatDateDisplay,
+                  formatDateTimeDisplay,
                 }}
               />
             ) : null}

@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
+  ArrowUpRight,
   ArrowRight,
   Banknote,
   BarChart3,
@@ -8,7 +9,6 @@ import {
   CircleDollarSign,
   Clock3,
   Package,
-  Sparkles,
   Trophy,
   TrendingUp,
   Users,
@@ -38,15 +38,44 @@ function getLocalDateKey(value = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
-function getDateKeyFromValue(value) {
+function normalizeDateMatch(match) {
+  return `${match[1]}-${String(match[2]).padStart(2, '0')}-${String(match[3]).padStart(2, '0')}`;
+}
+
+function getBusinessDateKey(value) {
+  if (value instanceof Date) {
+    return getLocalDateKey(value);
+  }
+
   const raw = String(value || '').trim();
-  const dashed = raw.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
-  if (dashed) return `${dashed[1]}-${String(dashed[2]).padStart(2, '0')}-${String(dashed[3]).padStart(2, '0')}`;
+  if (!raw) return '';
 
-  const slashed = raw.match(/(\d{4})\/(\d{1,2})\/(\d{1,2})/);
-  if (slashed) return `${slashed[1]}-${String(slashed[2]).padStart(2, '0')}-${String(slashed[3]).padStart(2, '0')}`;
+  const plainDashed = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (plainDashed) {
+    return normalizeDateMatch(plainDashed);
+  }
 
-  const parsed = value instanceof Date ? value : new Date(raw);
+  const plainSlashed = raw.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
+  if (plainSlashed) {
+    return normalizeDateMatch(plainSlashed);
+  }
+
+  const parsed = new Date(raw);
+  if (!Number.isNaN(parsed.getTime())) {
+    return getLocalDateKey(parsed);
+  }
+
+  return '';
+}
+
+function getDateKeyFromValue(value) {
+  const normalizedBusinessDate = getBusinessDateKey(value);
+  if (normalizedBusinessDate) return normalizedBusinessDate;
+
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+
+  const parsed = new Date(raw);
   if (Number.isNaN(parsed.getTime())) return '';
 
   return getLocalDateKey(parsed);
@@ -201,36 +230,29 @@ function buildOperationalCostSummary(costs, today) {
   return buildOperationalCostSummaryByRange(costs, today, 'month');
 }
 
+function getOperationalCostEffectiveDateKey(cost) {
+  return getBusinessDateKey(cost?.cost_date ?? cost?.date);
+}
+
 function matchesCostRange(cost, todayKey, range) {
-  const rawCandidates = [cost?.cost_date, cost?.created_at]
-    .map((value) => String(value || '').trim())
-    .filter(Boolean);
+  const effectiveDateKey = getOperationalCostEffectiveDateKey(cost);
 
-  const normalizedKeys = rawCandidates
-    .map((value) => getDateKeyFromValue(value))
-    .filter(Boolean);
+  if (range === 'all') {
+    return Boolean(effectiveDateKey) || Number.isFinite(Number(cost?.amount || 0));
+  }
 
-  if (range === 'all') return normalizedKeys.length > 0 || rawCandidates.length > 0;
+  if (!effectiveDateKey) return false;
 
-  const monthPrefix = todayKey.slice(0, 7);
-  const yearPrefix = todayKey.slice(0, 4);
-
-  return normalizedKeys.some((key) => {
-    if (range === 'day') return key === todayKey;
-    if (range === 'year') return key.startsWith(yearPrefix);
-    return key.startsWith(monthPrefix);
-  }) || rawCandidates.some((value) => {
-    if (range === 'day') return value.startsWith(todayKey);
-    if (range === 'year') return value.startsWith(yearPrefix);
-    return value.startsWith(monthPrefix);
-  });
+  if (range === 'day') return effectiveDateKey === todayKey;
+  if (range === 'year') return effectiveDateKey.startsWith(todayKey.slice(0, 4));
+  return effectiveDateKey.startsWith(todayKey.slice(0, 7));
 }
 
 function buildOperationalCostSummaryByRange(costs, today, range = 'month') {
   const thisMonthByType = new Map();
   let filteredTotal = 0;
   let lifetimeTotal = 0;
-  const thisDay = getDateKeyFromValue(today) || getLocalDateKey();
+  const thisDay = getBusinessDateKey(today) || getLocalDateKey();
 
   (costs || []).forEach((cost) => {
     const amount = Number(cost.amount || 0);
@@ -296,6 +318,53 @@ function buildInventorySnapshot(lots) {
     .sort((a, b) => b.remainingWeight - a.remainingWeight);
 }
 
+function getQualityTheme(quality) {
+  const normalized = String(quality || '').toLowerCase();
+
+  if (normalized === 'best') {
+    return {
+      darkBadge: 'border-emerald-300/20 bg-emerald-400/15 text-emerald-100',
+      lightBadge: 'border-emerald-100 bg-emerald-50 text-emerald-700',
+      lightCard: 'from-emerald-50 via-white to-lime-50 border-emerald-100/80',
+      accent: 'from-emerald-400 to-lime-300',
+    };
+  }
+
+  if (normalized === 'good') {
+    return {
+      darkBadge: 'border-sky-300/20 bg-sky-400/15 text-sky-100',
+      lightBadge: 'border-sky-100 bg-sky-50 text-sky-700',
+      lightCard: 'from-sky-50 via-white to-cyan-50 border-sky-100/80',
+      accent: 'from-sky-400 to-cyan-300',
+    };
+  }
+
+  if (normalized === 'normal') {
+    return {
+      darkBadge: 'border-amber-300/20 bg-amber-300/15 text-amber-100',
+      lightBadge: 'border-amber-100 bg-amber-50 text-amber-700',
+      lightCard: 'from-amber-50 via-white to-yellow-50 border-amber-100/80',
+      accent: 'from-amber-400 to-yellow-300',
+    };
+  }
+
+  if (normalized === 'bad' || normalized === 'worst') {
+    return {
+      darkBadge: 'border-rose-300/20 bg-rose-400/15 text-rose-100',
+      lightBadge: 'border-rose-100 bg-rose-50 text-rose-700',
+      lightCard: 'from-rose-50 via-white to-orange-50 border-rose-100/80',
+      accent: 'from-rose-400 to-orange-300',
+    };
+  }
+
+  return {
+    darkBadge: 'border-white/15 bg-white/10 text-white/85',
+    lightBadge: 'border-zinc-200 bg-zinc-50 text-zinc-700',
+    lightCard: 'from-zinc-50 via-white to-slate-50 border-zinc-200/80',
+    accent: 'from-zinc-400 to-slate-300',
+  };
+}
+
 function AnalyticsSectionTabs({ activeSection, onChange, text }) {
   const tabs = [
     {
@@ -331,11 +400,8 @@ function AnalyticsSectionTabs({ activeSection, onChange, text }) {
   ];
 
   return (
-    <div className="no-scrollbar overflow-x-auto rounded-[1.15rem] border border-zinc-200/80 bg-zinc-100/80 p-1.5 backdrop-blur-xl">
+    <div className="no-scrollbar overflow-x-auto rounded-[1.5rem] border border-zinc-200/80 bg-white/85 p-1.5 shadow-[0_14px_40px_-28px_rgba(15,23,42,0.45)] backdrop-blur-xl">
       <div className="flex w-max min-w-full items-center gap-1.5">
-        <div className="hidden shrink-0 rounded-xl bg-white/80 p-2 text-zinc-500 sm:block">
-          <Sparkles className="h-4 w-4" />
-        </div>
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const active = activeSection === tab.key;
@@ -344,17 +410,17 @@ function AnalyticsSectionTabs({ activeSection, onChange, text }) {
               key={tab.key}
               type="button"
               onClick={() => onChange(tab.key)}
-              className={`shrink-0 min-w-[124px] rounded-xl border px-3 py-2 text-left text-sm font-semibold transition sm:min-w-[138px] ${
+              className={`shrink-0 min-w-[122px] rounded-[1.05rem] border px-3 py-2.5 text-left text-sm font-semibold transition sm:min-w-[138px] ${
                 active
-                  ? 'border-zinc-200 bg-white text-zinc-900'
-                  : 'border-transparent bg-transparent text-zinc-500 hover:bg-white/70 hover:text-zinc-800'
+                  ? 'border-zinc-200 bg-white text-zinc-900 shadow-[0_12px_30px_-22px_rgba(15,23,42,0.55)]'
+                  : 'border-transparent bg-transparent text-zinc-500 hover:bg-zinc-50 hover:text-zinc-800'
               }`}
             >
-              <div className="flex items-center gap-2">
-                <span className={`inline-flex h-6 w-6 items-center justify-center rounded-lg ${active ? 'bg-zinc-100' : 'bg-zinc-200/60'} ${tab.iconClass}`}>
+              <div className="flex items-center gap-2.5">
+                <span className={`inline-flex h-7 w-7 items-center justify-center rounded-xl ${active ? 'bg-zinc-100' : 'bg-zinc-100'} ${tab.iconClass}`}>
                   <Icon className="h-3.5 w-3.5" />
                 </span>
-                <span className="truncate text-xs">{tab.label}</span>
+                <span className="truncate text-xs tracking-[0.01em]">{tab.label}</span>
               </div>
             </button>
           );
@@ -364,46 +430,83 @@ function AnalyticsSectionTabs({ activeSection, onChange, text }) {
   );
 }
 
-function SellerHealthBoard({ title, subtitle, rows, emptyLabel, text }) {
+function SellerHealthBoard({ title, subtitle, rows, emptyLabel, text, lang }) {
   const [expanded, setExpanded] = useState(false);
   const visibleRows = expanded ? rows : rows.slice(0, ANALYTICS_PREVIEW_COUNT);
   const canToggle = rows.length > ANALYTICS_PREVIEW_COUNT;
+  const riskCount = rows.filter((row) => row.badQuality).length;
+  const payableCount = rows.filter((row) => Number(row.balanceOwed || 0) > 0).length;
 
   return (
-    <div className="max-w-full rounded-[2rem] border border-zinc-100 bg-white p-4 shadow-sm sm:p-6">
-      <h3 className="text-lg font-black tracking-tight text-zinc-900">{title}</h3>
-      <p className="mt-1 text-sm text-zinc-400">{subtitle}</p>
+    <div className="max-w-full rounded-[2rem] border border-rose-100/70 bg-[radial-gradient(circle_at_top_right,_rgba(251,207,232,0.22),_transparent_28%),linear-gradient(180deg,_rgba(255,255,255,0.98),_rgba(255,247,250,0.96)_100%)] p-4 shadow-[0_20px_60px_-42px_rgba(244,114,182,0.3)] sm:p-6">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
+          <span className="inline-flex items-center rounded-full border border-rose-100 bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-rose-700">
+            {lang === 'zh' ? '卖家观察' : 'Seller Watch'}
+          </span>
+          <h3 className="mt-3 text-xl font-black tracking-tight text-zinc-950">{title}</h3>
+          <p className="mt-1 max-w-lg text-sm leading-6 text-zinc-500">{subtitle}</p>
+        </div>
+        <div className="grid max-w-sm flex-1 grid-cols-2 gap-2">
+          <div className="rounded-[1.15rem] border border-white bg-white/90 px-3.5 py-3 shadow-sm">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+              {lang === 'zh' ? '品质风险' : 'Quality Risk'}
+            </p>
+            <p className="mt-1 text-lg font-black text-zinc-950">{riskCount}</p>
+          </div>
+          <div className="rounded-[1.15rem] border border-white bg-white/90 px-3.5 py-3 shadow-sm">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+              {lang === 'zh' ? '待付款卖家' : 'Need Payment'}
+            </p>
+            <p className="mt-1 text-lg font-black text-zinc-950">{payableCount}</p>
+          </div>
+        </div>
+      </div>
+
       <div className="mt-5 space-y-3">
         {rows.length === 0 ? (
-          <div className="rounded-3xl bg-zinc-50 p-6 text-sm text-zinc-400">{emptyLabel}</div>
+          <div className="rounded-[1.5rem] border border-white bg-white/90 p-6 text-sm text-zinc-400">{emptyLabel}</div>
         ) : (
-          visibleRows.map((row) => (
-            <div key={row.id} className="rounded-3xl border border-zinc-100 bg-zinc-50/80 p-4">
+          visibleRows.map((row, index) => (
+            <div key={row.id} className="relative overflow-hidden rounded-[1.5rem] border border-white bg-white/92 p-4 shadow-[0_16px_38px_-28px_rgba(15,23,42,0.18)]">
+              <div className={`absolute inset-y-0 left-0 w-1 rounded-r-full bg-gradient-to-b ${row.badQuality ? 'from-rose-400 to-orange-300' : 'from-sky-400 to-cyan-300'}`} />
+              <div className="pl-3">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
-                  <p className="break-words text-base font-black text-zinc-900">{row.name}</p>
-                  <p className="mt-1 text-xs text-zinc-400">
-                    {row.badQuality ? (text.qualityRisk || 'Quality Risk') : (text.creditStatusNormal || 'Normal')} • {row.returnCount} {text.returnCount || 'returns'}
-                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-zinc-950 px-2 text-[11px] font-black text-white">
+                      {index + 1}
+                    </span>
+                    <p className="break-words text-[15px] font-black text-zinc-950">{row.name}</p>
+                  </div>
+                  <div className="mt-1.5 flex flex-wrap gap-2 text-[11px] font-semibold">
+                    <span className={`rounded-full px-3 py-1.5 ${row.badQuality ? 'bg-rose-50 text-rose-700' : 'bg-zinc-100 text-zinc-600'}`}>
+                      {row.badQuality ? (text.qualityRisk || 'Quality Risk') : (text.creditStatusNormal || 'Normal')}
+                    </span>
+                    <span className="rounded-full bg-slate-50 px-3 py-1.5 text-slate-600">
+                      {row.returnCount} {text.returnCount || 'returns'}
+                    </span>
+                  </div>
                 </div>
                 <div className="sm:text-right">
-                  <p className={`text-base font-black ${row.balanceOwed > 0 ? 'text-orange-700' : 'text-zinc-900'}`}>{formatCurrency(row.balanceOwed)}</p>
+                  <p className={`text-[15px] font-black ${row.balanceOwed > 0 ? 'text-orange-700' : 'text-zinc-950'}`}>{formatCurrency(row.balanceOwed)}</p>
                   <p className="text-xs text-zinc-400">{text.oweSeller || text.balance || 'Balance'}</p>
                 </div>
               </div>
-              <div className="mt-4 grid gap-2 sm:grid-cols-3">
-                <div className="rounded-2xl bg-white px-3 py-2.5">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">{text.bought || 'Bought'}</p>
-                  <p className="mt-1 text-sm font-black text-zinc-900">{formatCurrency(row.totalBought)}</p>
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                <div className="rounded-[1rem] bg-gradient-to-br from-slate-50 to-white px-3 py-2.5">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-zinc-400">{text.bought || 'Bought'}</p>
+                  <p className="mt-1 text-[12px] font-black text-zinc-950">{formatCurrency(row.totalBought)}</p>
                 </div>
-                <div className="rounded-2xl bg-white px-3 py-2.5">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">{text.paid || 'Paid'}</p>
-                  <p className="mt-1 text-sm font-black text-emerald-700">{formatCurrency(row.totalPaid)}</p>
+                <div className="rounded-[1rem] bg-gradient-to-br from-emerald-50 to-white px-3 py-2.5">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-zinc-400">{text.paid || 'Paid'}</p>
+                  <p className="mt-1 text-[12px] font-black text-emerald-700">{formatCurrency(row.totalPaid)}</p>
                 </div>
-                <div className="rounded-2xl bg-white px-3 py-2.5">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">{text.returnAmount || 'Return Amount'}</p>
-                  <p className="mt-1 text-sm font-black text-sky-700">{formatCurrency(row.returnedAmount)}</p>
+                <div className="rounded-[1rem] bg-gradient-to-br from-amber-50 to-white px-3 py-2.5">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-zinc-400">{text.returnAmount || 'Return Amount'}</p>
+                  <p className="mt-1 text-[12px] font-black text-amber-700">{formatCurrency(row.returnedAmount)}</p>
                 </div>
+              </div>
               </div>
             </div>
           ))
@@ -428,53 +531,103 @@ function SellerHealthBoard({ title, subtitle, rows, emptyLabel, text }) {
 function InventorySnapshotBoard({ title, subtitle, rows, emptyLabel, text, lang, onViewAll }) {
   const visibleRows = rows.slice(0, ANALYTICS_PREVIEW_COUNT);
   const hasMore = rows.length > ANALYTICS_PREVIEW_COUNT;
+  const totalRemaining = rows.reduce((sum, row) => sum + Number(row.remainingWeight || 0), 0);
+  const totalInventoryValue = rows.reduce((sum, row) => sum + Number(row.totalCost || 0), 0);
 
   return (
-    <div className="max-w-full rounded-[2rem] border border-zinc-100 bg-white p-4 shadow-sm sm:p-6">
-      <h3 className="text-lg font-black tracking-tight text-zinc-900">{title}</h3>
-      <p className="mt-1 text-sm text-zinc-400">{subtitle}</p>
-      <div className="mt-5 space-y-3">
-        {rows.length === 0 ? (
-          <div className="rounded-3xl bg-zinc-50 p-6 text-sm text-zinc-400">{emptyLabel}</div>
-        ) : (
-          visibleRows.map((row) => (
-            <div key={row.id} className="rounded-3xl border border-zinc-100 bg-zinc-50/80 p-4">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                <div className="min-w-0">
-                  <p className="break-words text-base font-black text-zinc-900">{row.productName}</p>
-                  <p className="mt-1 text-xs text-zinc-400">{row.sellerName || '-'} • {text?.[String(row.quality || '').toLowerCase()] || row.quality}</p>
-                </div>
-                <div className="sm:text-right">
-                  <p className="text-base font-black text-zinc-900">{formatWeight(row.remainingWeight, lang)}</p>
-                  <p className="text-xs text-zinc-400">{text.remaining || 'Remaining'}</p>
-                </div>
-              </div>
-              <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                <div className="rounded-2xl bg-white px-3 py-2.5">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">{text.costPerTon || 'Cost Per Ton'}</p>
-                  <p className="mt-1 text-sm font-black text-zinc-900">{formatCurrency(row.costPerTon)}</p>
-                </div>
-                <div className="rounded-2xl bg-white px-3 py-2.5">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">{text.totalCost || 'Total Cost'}</p>
-                  <p className="mt-1 text-sm font-black text-zinc-900">{formatCurrency(row.totalCost)}</p>
-                </div>
-              </div>
-            </div>
-          ))
-        )}
+    <div className="relative max-w-full overflow-hidden rounded-[2rem] border border-cyan-100/80 bg-[radial-gradient(circle_at_top_right,_rgba(186,230,253,0.28),_transparent_30%),linear-gradient(180deg,_rgba(255,255,255,0.98),_rgba(240,249,255,0.96)_100%)] p-4 shadow-[0_20px_60px_-42px_rgba(14,165,233,0.3)] sm:p-6">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -left-8 top-8 h-24 w-24 rounded-full bg-sky-200/30 blur-3xl" />
+        <div className="absolute right-0 top-0 h-32 w-32 rounded-full bg-cyan-200/30 blur-3xl" />
       </div>
-      {hasMore ? (
-        <div className="mt-4">
+      <div className="relative flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
+          <span className="inline-flex items-center rounded-full border border-cyan-100 bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-sky-700">
+            {lang === 'zh' ? '库存雷达' : 'Stock Radar'}
+          </span>
+          <h3 className="mt-3 text-xl font-black tracking-tight text-zinc-950">{title}</h3>
+          <p className="mt-1 max-w-lg text-sm leading-6 text-zinc-500">{subtitle}</p>
+        </div>
+        {hasMore ? (
           <button
             type="button"
             onClick={onViewAll}
-            className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50"
+            className="inline-flex shrink-0 items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50"
           >
             {text.viewAllInventoryData || (lang === 'zh' ? '查看全部产品数据' : 'View Full Product Data')}
             <ArrowRight className="h-4 w-4" />
           </button>
+        ) : null}
+      </div>
+
+      <div className="relative mt-4 grid gap-2 sm:max-w-xl sm:grid-cols-3">
+        <div className="rounded-[1.2rem] border border-white bg-white/90 px-3.5 py-3 shadow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+            {lang === 'zh' ? '批次数量' : 'Live Lots'}
+          </p>
+          <p className="mt-1 text-lg font-black text-zinc-950">{rows.length}</p>
         </div>
-      ) : null}
+        <div className="rounded-[1.2rem] border border-white bg-white/90 px-3.5 py-3 shadow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+            {text.remainingWeight || 'Remaining Weight'}
+          </p>
+          <p className="mt-1 text-lg font-black text-zinc-950">{formatWeight(totalRemaining, lang)}</p>
+        </div>
+        <div className="rounded-[1.2rem] border border-white bg-white/90 px-3.5 py-3 shadow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+            {text.totalCost || 'Total Cost'}
+          </p>
+          <p className="mt-1 text-lg font-black text-zinc-950">{formatCurrency(totalInventoryValue)}</p>
+        </div>
+      </div>
+
+      <div className="relative mt-5 space-y-3">
+        {rows.length === 0 ? (
+          <div className="rounded-[1.6rem] border border-white bg-white/90 p-6 text-sm text-zinc-400">{emptyLabel}</div>
+        ) : (
+          visibleRows.map((row, index) => {
+            const qualityTheme = getQualityTheme(row.quality);
+            return (
+            <div key={row.id} className={`rounded-[1.65rem] border bg-gradient-to-br p-4 shadow-[0_16px_38px_-28px_rgba(15,23,42,0.18)] ${qualityTheme.lightCard}`}>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-zinc-950 px-2 text-[11px] font-black text-white">
+                      {index + 1}
+                    </span>
+                    <p className="break-words text-base font-black text-zinc-950">{row.productName}</p>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-semibold">
+                    <span className="rounded-full border border-white bg-white/90 px-3 py-1.5 text-zinc-600">
+                      {row.sellerName || '-'}
+                    </span>
+                    <span className={`rounded-full border px-3 py-1.5 ${qualityTheme.lightBadge}`}>
+                      {text?.[String(row.quality || '').toLowerCase()] || row.quality}
+                    </span>
+                  </div>
+                </div>
+                <div className="sm:text-right">
+                  <p className="text-xl font-black tracking-tight text-zinc-950">{formatWeight(row.remainingWeight, lang)}</p>
+                  <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">{text.remaining || 'Remaining'}</p>
+                </div>
+              </div>
+              <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                <div className="rounded-[1.15rem] border border-white bg-white/90 px-3 py-3">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">{text.costPerTon || 'Cost Per Ton'}</p>
+                  <p className="mt-1 text-sm font-black text-zinc-950">{formatCurrency(row.costPerTon)}</p>
+                </div>
+                <div className="rounded-[1.15rem] border border-white bg-white/90 px-3 py-3">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">{text.totalCost || 'Total Cost'}</p>
+                  <div className="mt-1 flex items-center justify-between gap-2">
+                    <p className="text-sm font-black text-zinc-950">{formatCurrency(row.totalCost)}</p>
+                    <ArrowUpRight className="h-4 w-4 text-zinc-300" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )})
+        )}
+      </div>
     </div>
   );
 }
@@ -519,13 +672,13 @@ function MetricTile({ icon, title, value, hint, tone = 'default' }) {
   };
 
   return (
-    <div className={`max-w-full rounded-[1.75rem] border p-4 shadow-sm sm:p-5 ${tones[tone] || tones.default}`}>
-      <div className="flex items-center justify-between">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">{title}</p>
-        <div className="rounded-2xl bg-white/80 p-2 text-zinc-700">{icon}</div>
+    <div className={`max-w-full rounded-[1.3rem] border p-3 shadow-sm sm:p-3.5 ${tones[tone] || tones.default}`}>
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-[9px] font-bold uppercase tracking-[0.18em] leading-4 text-zinc-500">{title}</p>
+        <div className="rounded-[0.9rem] bg-white/85 p-1.5 text-zinc-700 shadow-sm">{icon}</div>
       </div>
-      <p className="mt-4 break-words text-xl font-black tracking-tight sm:text-2xl">{value}</p>
-      {hint ? <p className="mt-2 break-words text-sm text-zinc-500">{hint}</p> : null}
+      <p className="mt-2.5 break-words text-base font-black tracking-tight sm:text-[22px]">{value}</p>
+      {hint ? <p className="mt-1.5 break-words text-[11px] leading-4 text-zinc-500 sm:text-xs">{hint}</p> : null}
     </div>
   );
 }
@@ -563,42 +716,76 @@ function MiniBarChart({ title, subtitle, data, soldLabel, receivedLabel, profitL
 
 function CompanyDisciplineTable({ title, subtitle, companies, emptyLabel, lang, dayUnit, text }) {
   const visibleCompanies = companies.slice(0, ANALYTICS_PREVIEW_COUNT);
+  const urgentCount = companies.filter((company) => Number(company.balance_owed || 0) > 0).length;
+  const oldestOpen = Math.max(...companies.map((company) => Number(company.oldestUnpaidDays || 0)), 0);
 
   return (
-    <div className="max-w-full rounded-[2rem] border border-zinc-100 bg-white p-4 shadow-sm sm:p-6">
-      <h3 className="text-lg font-black tracking-tight text-zinc-900">{title}</h3>
-      <p className="mt-1 text-sm text-zinc-400">{subtitle}</p>
+    <div className="max-w-full rounded-[2rem] border border-stone-200 bg-[radial-gradient(circle_at_top_left,_rgba(254,243,199,0.4),_transparent_28%),linear-gradient(180deg,_rgba(255,255,255,0.98),_rgba(250,250,249,0.97)_100%)] p-4 shadow-[0_20px_60px_-42px_rgba(120,113,108,0.22)] sm:p-5">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
+          <span className="inline-flex items-center rounded-full border border-stone-200 bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-stone-700">
+            {lang === 'zh' ? '公司收款风向' : 'Payment Radar'}
+          </span>
+          <h3 className="mt-3 text-xl font-black tracking-tight text-zinc-950">{title}</h3>
+          <p className="mt-1 max-w-lg text-sm leading-6 text-zinc-500">{subtitle}</p>
+        </div>
+        <div className="grid max-w-sm flex-1 grid-cols-2 gap-2">
+          <div className="rounded-[1.2rem] border border-white/80 bg-white/90 px-3.5 py-3 shadow-sm">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+              {lang === 'zh' ? '待跟进公司' : 'Watchlist'}
+            </p>
+            <p className="mt-1 text-lg font-black text-zinc-950">{urgentCount}</p>
+          </div>
+          <div className="rounded-[1.2rem] border border-white/80 bg-white/90 px-3.5 py-3 shadow-sm">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+              {lang === 'zh' ? '最久未收款' : 'Longest Open'}
+            </p>
+            <p className="mt-1 text-lg font-black text-zinc-950">{formatDays(oldestOpen, lang, dayUnit)}</p>
+          </div>
+        </div>
+      </div>
+
       <div className="mt-5 space-y-3">
         {companies.length === 0 ? (
-          <div className="rounded-3xl bg-zinc-50 p-6 text-sm text-zinc-400">{emptyLabel}</div>
+          <div className="rounded-[1.6rem] border border-white/80 bg-white/90 p-6 text-sm text-zinc-400">{emptyLabel}</div>
         ) : (
-          visibleCompanies.map((company) => (
-            <div key={company.id} className="rounded-3xl border border-zinc-100 bg-zinc-50/80 p-4">
+          visibleCompanies.map((company, index) => (
+            <div key={company.id} className="relative overflow-hidden rounded-[1.55rem] border border-white bg-white/94 p-3.5 shadow-[0_16px_36px_-28px_rgba(15,23,42,0.16)]">
+              <div className={`absolute inset-y-0 left-0 w-1 rounded-r-full bg-gradient-to-b ${company.bad_credit ? 'from-rose-400 to-orange-300' : 'from-stone-400 to-amber-300'}`} />
+              <div className="pl-3">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
-                  <p className="break-words text-base font-black text-zinc-900">{company.name}</p>
-                  <p className="mt-1 text-xs text-zinc-400">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-zinc-950 px-2 text-[11px] font-black text-white">
+                      {index + 1}
+                    </span>
+                    <p className="break-words text-[15px] font-black text-zinc-950">{company.name}</p>
+                  </div>
+                  <p className="mt-1 text-[11px] text-zinc-400">
                     {company.bad_credit ? company.badCreditFlaggedLabel : company.creditStatusNormalLabel} • {company.sales.length} {company.salesLabel}
                   </p>
                 </div>
                 <div className="sm:text-right">
-                  <p className="text-base font-black text-orange-700">{formatCurrency(company.balance_owed)}</p>
-                  <p className="text-xs text-zinc-400">{company.outstandingBalanceLabel}</p>
+                  <span className={`inline-flex rounded-full px-3 py-1.5 text-[11px] font-black ${Number(company.balance_owed || 0) > 0 ? 'bg-orange-50 text-orange-700' : 'bg-emerald-50 text-emerald-700'}`}>
+                    {formatCurrency(company.balance_owed)}
+                  </span>
+                  <p className="mt-1 text-[11px] text-zinc-400">{company.outstandingBalanceLabel}</p>
                 </div>
               </div>
-              <div className="mt-4 grid gap-2 sm:grid-cols-3">
-                <div className="rounded-2xl bg-white px-3 py-2.5">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">{company.oldestUnpaidLabel}</p>
-                  <p className="mt-1 text-sm font-black text-zinc-900">{formatDays(company.oldestUnpaidDays, lang, dayUnit)}</p>
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                <div className="rounded-[1rem] bg-gradient-to-br from-stone-50 to-white px-2.5 py-2.5">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-zinc-400">{company.oldestUnpaidLabel}</p>
+                  <p className="mt-1 text-[12px] font-black text-zinc-950">{formatDays(company.oldestUnpaidDays, lang, dayUnit)}</p>
                 </div>
-                <div className="rounded-2xl bg-white px-3 py-2.5">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">{company.avgPayDelayLabel}</p>
-                  <p className="mt-1 text-sm font-black text-zinc-900">{formatDays(company.avgPaymentDelay, lang, dayUnit)}</p>
+                <div className="rounded-[1rem] bg-gradient-to-br from-slate-50 to-white px-2.5 py-2.5">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-zinc-400">{company.avgPayDelayLabel}</p>
+                  <p className="mt-1 text-[12px] font-black text-zinc-950">{formatDays(company.avgPaymentDelay, lang, dayUnit)}</p>
                 </div>
-                <div className="rounded-2xl bg-white px-3 py-2.5">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">{company.onTimeRateLabel}</p>
-                  <p className="mt-1 text-sm font-black text-zinc-900">{Math.round(company.onTimeRate)}%</p>
+                <div className="rounded-[1rem] bg-gradient-to-br from-emerald-50 to-white px-2.5 py-2.5">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-zinc-400">{company.onTimeRateLabel}</p>
+                  <p className="mt-1 text-[12px] font-black text-zinc-950">{Math.round(company.onTimeRate)}%</p>
                 </div>
+              </div>
               </div>
             </div>
           ))
@@ -658,42 +845,58 @@ function ProfitPanel({ title, subtitle, totalProfit, totalSoldValue, totalReceiv
 
 function QualityPricingGrid({ title, subtitle, rows, emptyLabel, soldLabel, boughtLabel, lang }) {
   return (
-    <div className="max-w-full rounded-[2rem] border border-zinc-100 bg-white p-4 shadow-sm sm:p-6">
-      <h3 className="text-lg font-black tracking-tight text-zinc-900">{title}</h3>
-      <p className="mt-1 text-sm text-zinc-400">{subtitle}</p>
+    <div className="max-w-full rounded-[2rem] border border-zinc-100 bg-[radial-gradient(circle_at_top_left,_rgba(186,230,253,0.22),_transparent_26%),linear-gradient(180deg,_rgba(255,255,255,0.98),_rgba(248,250,252,0.96)_100%)] p-4 shadow-[0_24px_70px_-46px_rgba(14,165,233,0.42)] sm:p-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <span className="inline-flex items-center rounded-full border border-sky-100 bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-sky-700">
+            {lang === 'zh' ? '品质价格带' : 'Quality Ladder'}
+          </span>
+          <h3 className="mt-3 text-xl font-black tracking-tight text-zinc-950">{title}</h3>
+          <p className="mt-1 max-w-lg text-sm leading-6 text-zinc-500">{subtitle}</p>
+        </div>
+      </div>
       <div className="mt-5 space-y-3">
         {rows.length === 0 ? (
-          <div className="rounded-3xl bg-zinc-50 p-6 text-sm text-zinc-400">{emptyLabel}</div>
+          <div className="rounded-[1.6rem] border border-zinc-100 bg-white p-6 text-sm text-zinc-400">{emptyLabel}</div>
         ) : (
-          rows.map((row) => (
-            <div key={row.quality} className="rounded-3xl border border-zinc-100 bg-zinc-50/80 p-4">
+          rows.map((row) => {
+            const qualityTheme = getQualityTheme(row.quality);
+            return (
+            <div key={row.quality} className={`relative overflow-hidden rounded-[1.6rem] border bg-gradient-to-br p-4 shadow-sm ${qualityTheme.lightCard}`}>
+              <div className={`absolute inset-y-0 left-0 w-1 rounded-r-full bg-gradient-to-b ${qualityTheme.accent}`} />
+              <div className="pl-3">
               <div className="flex flex-col gap-2">
-                <p className="break-words text-base font-black text-zinc-900">{row.qualityLabel || row.quality}</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className={`rounded-full border px-3 py-1 text-[11px] font-black ${qualityTheme.lightBadge}`}>
+                    {row.qualityLabel || row.quality}
+                  </span>
+                </div>
                 <div className="flex flex-wrap gap-2 text-xs">
-                  <span className="rounded-full bg-white px-3 py-1.5 font-semibold text-zinc-700">
+                  <span className="rounded-full border border-white/80 bg-white px-3 py-1.5 font-semibold text-zinc-700">
                     {boughtLabel}: {formatWeight(row.boughtWeight, lang)}
                   </span>
-                  <span className="rounded-full bg-white px-3 py-1.5 font-semibold text-zinc-700">
+                  <span className="rounded-full border border-white/80 bg-white px-3 py-1.5 font-semibold text-zinc-700">
                     {soldLabel}: {formatWeight(row.soldWeight, lang)}
                   </span>
                 </div>
               </div>
-              <div className="mt-4 grid gap-2 sm:grid-cols-3">
-                <div className="rounded-2xl bg-white px-3 py-2.5">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">{row.buyPerTonLabel}</p>
-                  <p className="mt-1 text-sm font-black text-zinc-900">{formatCurrency(row.avgBuyPerTon)}</p>
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                <div className="rounded-[1rem] border border-white/80 bg-white px-3 py-2.5">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-zinc-400">{row.buyPerTonLabel}</p>
+                  <p className="mt-1 text-[12px] font-black text-zinc-950">{formatCurrency(row.avgBuyPerTon)}</p>
                 </div>
-                <div className="rounded-2xl bg-white px-3 py-2.5">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">{row.sellPerTonLabel}</p>
-                  <p className="mt-1 text-sm font-black text-zinc-900">{formatCurrency(row.avgSellPerTon)}</p>
+                <div className="rounded-[1rem] border border-white/80 bg-white px-3 py-2.5">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-zinc-400">{row.sellPerTonLabel}</p>
+                  <p className="mt-1 text-[12px] font-black text-zinc-950">{formatCurrency(row.avgSellPerTon)}</p>
                 </div>
-                <div className={`rounded-2xl px-3 py-2.5 ${row.marginPerTon >= 0 ? 'bg-emerald-50' : 'bg-red-50'}`}>
-                  <p className={`text-[10px] font-bold uppercase tracking-widest ${row.marginPerTon >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>{row.marginPerTonLabel}</p>
-                  <p className={`mt-1 text-sm font-black ${row.marginPerTon >= 0 ? 'text-emerald-800' : 'text-red-800'}`}>{formatCurrency(row.marginPerTon)}</p>
+                <div className={`rounded-[1rem] border px-3 py-2.5 ${row.marginPerTon >= 0 ? 'border-emerald-100 bg-emerald-50' : 'border-rose-100 bg-rose-50'}`}>
+                  <p className={`text-[9px] font-bold uppercase tracking-[0.16em] ${row.marginPerTon >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>{row.marginPerTonLabel}</p>
+                  <p className={`mt-1 text-[12px] font-black ${row.marginPerTon >= 0 ? 'text-emerald-800' : 'text-rose-800'}`}>{formatCurrency(row.marginPerTon)}</p>
                 </div>
               </div>
+              </div>
             </div>
-          ))
+          )})
         )}
       </div>
     </div>
@@ -703,50 +906,83 @@ function QualityPricingGrid({ title, subtitle, rows, emptyLabel, soldLabel, boug
 function CompanyPerformanceBoard({ title, subtitle, rows, emptyLabel, soldLabel, text, lang, tonUnit }) {
   const visibleRows = rows.slice(0, ANALYTICS_PREVIEW_COUNT);
   const maxPrice = Math.max(...rows.map((row) => row.avgPricePerTon), 1);
+  const leader = rows[0];
+  const avgCollection = rows.length
+    ? average(rows.map((row) => Number(row.collectionRate || 0)))
+    : 0;
 
   return (
-    <div className="max-w-full rounded-[2rem] border border-zinc-100 bg-white p-4 shadow-sm sm:p-6">
-      <h3 className="text-lg font-black tracking-tight text-zinc-900">{title}</h3>
-      <p className="mt-1 text-sm text-zinc-400">{subtitle}</p>
-      <div className="mt-5 space-y-3">
+    <div className="relative max-w-full overflow-hidden rounded-[2rem] border border-sky-100/80 bg-[radial-gradient(circle_at_top_left,_rgba(219,234,254,0.5),_transparent_28%),linear-gradient(180deg,_rgba(255,255,255,0.98),_rgba(248,250,252,0.97)_100%)] p-4 shadow-[0_20px_60px_-42px_rgba(59,130,246,0.24)] sm:p-5">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-8 right-6 h-28 w-28 rounded-full bg-sky-200/25 blur-3xl" />
+        <div className="absolute bottom-0 left-0 h-24 w-24 rounded-full bg-indigo-100/30 blur-3xl" />
+      </div>
+      <div className="relative flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
+          <span className="inline-flex items-center rounded-full border border-sky-100 bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-sky-700">
+            {lang === 'zh' ? '市场表现' : 'Market Pulse'}
+          </span>
+          <h3 className="mt-3 text-xl font-black tracking-tight text-zinc-950">{title}</h3>
+          <p className="mt-1 max-w-lg text-sm leading-6 text-zinc-500">{subtitle}</p>
+        </div>
+        <div className="grid max-w-sm flex-1 grid-cols-2 gap-2">
+          <div className="rounded-[1.2rem] border border-white bg-white/90 px-3.5 py-3 shadow-sm">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+              {lang === 'zh' ? '领先公司' : 'Leader'}
+            </p>
+            <p className="mt-1 truncate text-sm font-black text-zinc-950">{leader?.name || '-'}</p>
+          </div>
+          <div className="rounded-[1.2rem] border border-white bg-white/90 px-3.5 py-3 shadow-sm">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+              {text.collectionRate || 'Collection Rate'}
+            </p>
+            <p className="mt-1 text-sm font-black text-zinc-950">{Math.round(avgCollection)}%</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="relative mt-5 space-y-3">
         {rows.length === 0 ? (
-          <div className="rounded-3xl bg-zinc-50 p-6 text-sm text-zinc-400">{emptyLabel}</div>
+          <div className="rounded-[1.6rem] border border-white bg-white/90 p-6 text-sm text-zinc-400">{emptyLabel}</div>
         ) : (
           visibleRows.map((row, index) => (
-            <div key={row.id} className="rounded-3xl border border-zinc-100 bg-gradient-to-br from-zinc-50 via-white to-sky-50/60 p-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div key={row.id} className="rounded-[1.55rem] border border-white bg-white/92 p-3.5 shadow-[0_16px_36px_-28px_rgba(15,23,42,0.16)]">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-900 text-xs font-black text-white">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-950 text-[11px] font-black text-white">
                       {index + 1}
                     </div>
-                    <p className="break-words text-base font-black text-zinc-900">{row.name}</p>
+                    <p className="break-words text-[15px] font-black text-zinc-950">{row.name}</p>
                   </div>
-                  <p className="mt-2 text-xs text-zinc-400">{soldLabel}: {formatWeight(row.totalWeight, lang)}</p>
+                  <p className="mt-1 text-[11px] text-zinc-400">{soldLabel}: {formatWeight(row.totalWeight, lang)}</p>
                 </div>
                 <div className="sm:text-right">
-                  <p className="text-lg font-black text-zinc-900">{formatCurrency(row.avgPricePerTon)}/{tonUnit}</p>
-                  <p className="text-xs text-zinc-400">{Math.round(row.collectionRate)}% {text.collectionRate || 'Collection Rate'}</p>
+                  <p className="text-[15px] font-black text-zinc-950">{formatCurrency(row.avgPricePerTon)}/{tonUnit}</p>
+                  <p className="text-[11px] text-zinc-400">{Math.round(row.collectionRate)}% {text.collectionRate || 'Collection Rate'}</p>
                 </div>
               </div>
-              <div className="mt-4 h-3 overflow-hidden rounded-full bg-white">
+              <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-slate-100">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-zinc-900 via-sky-500 to-emerald-500"
+                  className="h-full rounded-full bg-gradient-to-r from-slate-700 via-sky-500 to-cyan-400"
                   style={{ width: `${Math.max(12, (row.avgPricePerTon / maxPrice) * 100)}%` }}
                 />
               </div>
-              <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                <div className="rounded-2xl bg-white px-3 py-3">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">{text.totalProfit || 'Total Profit'}</p>
-                  <p className={`mt-1 text-sm font-black ${row.profit >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>{formatCurrency(row.profit)}</p>
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                <div className="rounded-[1rem] bg-gradient-to-br from-emerald-50 to-white px-2.5 py-2.5">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-zinc-400">{text.totalProfit || 'Total Profit'}</p>
+                  <p className={`mt-1 text-[12px] font-black ${row.profit >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>{formatCurrency(row.profit)}</p>
                 </div>
-                <div className="rounded-2xl bg-white px-3 py-3">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">{text.received || 'Received'}</p>
-                  <p className="mt-1 text-sm font-black text-zinc-900">{formatCurrency(row.totalReceived)}</p>
+                <div className="rounded-[1rem] bg-gradient-to-br from-sky-50 to-white px-2.5 py-2.5">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-zinc-400">{text.received || 'Received'}</p>
+                  <p className="mt-1 text-[12px] font-black text-zinc-950">{formatCurrency(row.totalReceived)}</p>
                 </div>
-                <div className="rounded-2xl bg-white px-3 py-3">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">{text.outstandingBalance || 'Outstanding balance'}</p>
-                  <p className={`mt-1 text-sm font-black ${row.balanceOwed > 0 ? 'text-orange-700' : 'text-zinc-900'}`}>{formatCurrency(row.balanceOwed)}</p>
+                <div className="rounded-[1rem] bg-gradient-to-br from-amber-50 to-white px-2.5 py-2.5">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-zinc-400">{text.outstandingBalance || 'Outstanding balance'}</p>
+                  <div className="mt-1 flex items-center justify-between gap-2">
+                    <p className={`text-[12px] font-black ${row.balanceOwed > 0 ? 'text-amber-700' : 'text-zinc-950'}`}>{formatCurrency(row.balanceOwed)}</p>
+                    <ArrowUpRight className="h-3.5 w-3.5 text-zinc-300" />
+                  </div>
                 </div>
               </div>
             </div>
@@ -942,7 +1178,7 @@ export default function AnalyticsDashboard({ dashboard, text, lang }) {
 
       {activeSection === 'overview' ? (
         <>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
             <MetricTile
               icon={<BarChart3 className="h-5 w-5" />}
               title={text.collectionRate || 'Collection Rate'}
@@ -1017,13 +1253,13 @@ export default function AnalyticsDashboard({ dashboard, text, lang }) {
             <button
               type="button"
               onClick={() => setDetailMode('companies')}
-              className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50"
+              className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 shadow-[0_14px_34px_-24px_rgba(15,23,42,0.55)] transition hover:bg-zinc-50"
             >
               {text.viewAllCompanyData || (lang === 'zh' ? '查看全部公司数据' : 'View Full Company Data')}
               <ArrowRight className="h-4 w-4" />
             </button>
           </div>
-          <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+          <div className="grid gap-4 lg:grid-cols-[1.02fr_0.98fr]">
             <CompanyDisciplineTable
               title={text.companyPaymentDiscipline || 'Company Payment Discipline'}
               subtitle={text.paymentDisciplineSubtitle || 'See who pays late, who still owes money, and which accounts need attention first.'}
@@ -1054,6 +1290,7 @@ export default function AnalyticsDashboard({ dashboard, text, lang }) {
           rows={analytics.sellers}
           emptyLabel={lang === 'zh' ? '还没有卖家分析数据。' : 'No seller insights yet.'}
           text={text}
+          lang={lang}
         />
       ) : null}
 

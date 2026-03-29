@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import { motion } from 'motion/react';
 import {
   AlertTriangle,
   ArrowRight,
@@ -7,7 +6,6 @@ import {
   Package,
   Plus,
   Search,
-  Trash2,
   XCircle,
 } from 'lucide-react';
 import InventoryLotDetailPage from './InventoryLotDetailPage';
@@ -26,24 +24,37 @@ function LotDetailButton({ lang, onClick, compact = false }) {
     <button
       type="button"
       onClick={onClick}
-      className={`group inline-flex items-center gap-3 rounded-[1.2rem] border border-sky-200 bg-gradient-to-r from-sky-50 via-white to-emerald-50 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-sky-300 hover:shadow-md ${
-        compact ? 'px-3.5 py-2.5' : 'w-full px-4 py-3.5'
+      className={`group inline-flex items-center rounded-[1rem] border border-sky-200 bg-gradient-to-r from-sky-50 via-white to-emerald-50 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-sky-300 hover:shadow-md ${
+        compact ? 'gap-2 px-3.5 py-2' : 'w-full gap-3 px-4 py-3.5'
       }`}
     >
-      <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-white text-sky-700 shadow-sm">
-        <Package className="h-4 w-4" />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-sm font-black text-zinc-900">
-          {lang === 'zh' ? '查看详情' : 'View Details'}
-        </span>
-        <span className="mt-0.5 block text-xs text-zinc-500">
-          {lang === 'zh' ? '进入产品独立页面' : 'Open the product page'}
-        </span>
-      </span>
-      <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-700 transition group-hover:translate-x-0.5">
-        <ArrowRight className="h-4 w-4" />
-      </span>
+      {compact ? (
+        <>
+          <span className="text-[12px] font-black text-zinc-900 sm:text-[13px]">
+            {lang === 'zh' ? '查看详情' : 'View Details'}
+          </span>
+          <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white text-sky-700 shadow-sm transition group-hover:translate-x-0.5">
+            <ArrowRight className="h-3 w-3" />
+          </span>
+        </>
+      ) : (
+        <>
+          <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-white text-sky-700 shadow-sm">
+            <Package className="h-4 w-4" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-black text-zinc-900">
+              {lang === 'zh' ? '查看详情' : 'View Details'}
+            </span>
+            <span className="mt-0.5 block text-xs text-zinc-500">
+              {lang === 'zh' ? '进入产品独立页面' : 'Open the product page'}
+            </span>
+          </span>
+          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-700 transition group-hover:translate-x-0.5">
+            <ArrowRight className="h-4 w-4" />
+          </span>
+        </>
+      )}
     </button>
   );
 }
@@ -63,6 +74,22 @@ function LotSellerMeta({ lot, sellerHasQualityIssue, text, formatDateDisplay }) 
       )}
       <span className="text-zinc-300">•</span>
       <span>{formatDateDisplay(lot.purchase_date)}</span>
+    </div>
+  );
+}
+
+function LotMetricBox({ label, value, tone = 'zinc' }) {
+  const tones = {
+    zinc: 'border-zinc-100 bg-zinc-50/85 text-zinc-900 label:text-zinc-400',
+    sky: 'border-sky-100 bg-sky-50/80 text-sky-900 label:text-sky-500',
+    emerald: 'border-emerald-100 bg-emerald-50/80 text-emerald-900 label:text-emerald-500',
+    amber: 'border-amber-100 bg-amber-50/85 text-amber-900 label:text-amber-500',
+  };
+
+  return (
+    <div className={`rounded-[1rem] border px-2.5 py-2 ${tones[tone] || tones.zinc}`}>
+      <p className="text-[9px] font-bold uppercase tracking-[0.16em]">{label}</p>
+      <p className="mt-0.5 text-[12px] font-black leading-4">{value}</p>
     </div>
   );
 }
@@ -172,68 +199,48 @@ export default function InventoryPage({ ctx }) {
     <>
       <section className="space-y-6">
         <div className="max-w-full rounded-[2rem] border border-zinc-100 bg-white p-4 shadow-sm sm:p-6">
-          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px]">
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.25, ease: 'easeOut' }}
-              className="rounded-2xl border border-zinc-200 bg-zinc-50/80 p-3 sm:p-4"
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={handleOpenLotModal}
+              disabled={!hasSellerProfiles}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-black shadow-sm transition ${
+                hasSellerProfiles
+                  ? 'border border-emerald-200 bg-emerald-50 text-emerald-700 hover:border-emerald-300 hover:bg-emerald-100'
+                  : 'cursor-not-allowed border border-zinc-200 bg-zinc-100 text-zinc-400'
+              }`}
             >
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">{text.searchLots}</p>
-                <button
-                  type="button"
-                  onClick={() => setShowOverviewPage(true)}
-                  className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-bold text-sky-700 transition hover:border-sky-300 hover:bg-sky-100"
-                >
-                  <Boxes className="h-3.5 w-3.5" />
-                  {lang === 'zh' ? '库存总览' : 'Overview'}
-                </button>
-              </div>
-              <div className="relative mt-2">
-                <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-                <input
-                  value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder={text.searchLots}
-                  className="w-full rounded-2xl border border-zinc-200 bg-white py-3 pl-11 pr-10 text-sm focus:border-black focus:outline-none focus:ring-4 focus:ring-black/5"
-                />
-                {searchQuery ? (
-                  <button
-                    type="button"
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
-                    aria-label={lang === 'zh' ? '清空搜索' : 'Clear search'}
-                  >
-                    <XCircle className="h-4 w-4" />
-                  </button>
-                ) : null}
-              </div>
-            </motion.div>
+              <Plus className="h-3.5 w-3.5" />
+              {t.addProduct}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowOverviewPage(true)}
+              className="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-black text-sky-700 shadow-sm transition hover:border-sky-300 hover:bg-sky-100"
+            >
+              <Boxes className="h-3.5 w-3.5" />
+              {lang === 'zh' ? '库存总览' : 'Overview'}
+            </button>
+          </div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.28, ease: 'easeOut', delay: 0.06 }}
-              whileHover={{ y: -2 }}
-              className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-cyan-50 p-3 sm:p-4"
-            >
-              <div className="flex h-full flex-col justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-100 text-emerald-700">
-                    <Package className="h-4 w-4" />
-                  </span>
-                  <div>
-                    <p className="text-sm font-black text-zinc-900">{t.addProduct}</p>
-                    <p className="text-xs text-zinc-500">{lang === 'zh' ? '新建进货批次' : 'Create a new purchase lot'}</p>
-                  </div>
-                </div>
-                <Button className="w-full px-3" onClick={handleOpenLotModal} disabled={!hasSellerProfiles}>
-                  <Plus className="h-4 w-4" />
-                  {t.addProduct}
-                </Button>
-              </div>
-            </motion.div>
+          <div className="relative mt-3">
+            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" />
+            <input
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder={text.searchLots}
+              className="h-10 w-full rounded-[1rem] border border-zinc-200 bg-zinc-50/70 pl-9 pr-9 text-[13px] font-medium focus:border-black focus:bg-white focus:outline-none focus:ring-4 focus:ring-black/5"
+            />
+            {searchQuery ? (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
+                aria-label={lang === 'zh' ? '清空搜索' : 'Clear search'}
+              >
+                <XCircle className="h-3.5 w-3.5" />
+              </button>
+            ) : null}
           </div>
           {!hasSellerProfiles ? (
             <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
@@ -257,12 +264,12 @@ export default function InventoryPage({ ctx }) {
               return (
                 <div
                   key={lot.id}
-                  className="max-w-full overflow-hidden rounded-[2rem] border border-zinc-100 bg-gradient-to-br from-white via-white to-sky-50/40 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                  className="max-w-full overflow-hidden rounded-[1.55rem] border border-zinc-100 bg-gradient-to-br from-white via-white to-sky-50/35 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                 >
-                  <div className="border-b border-zinc-100 p-4 sm:hidden">
+                  <div className="border-b border-zinc-100 p-3.5 sm:hidden">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <h3 className="break-words text-base font-black text-zinc-900">{lot.product_name}</h3>
+                        <h3 className="min-w-0 break-words text-[15px] font-black text-zinc-900">{lot.product_name}</h3>
                         <LotSellerMeta
                           lot={lot}
                           sellerHasQualityIssue={sellerHasQualityIssue}
@@ -270,35 +277,30 @@ export default function InventoryPage({ ctx }) {
                           formatDateDisplay={formatDateDisplay}
                         />
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Button variant="ghost" onClick={() => handleDeleteLot(lot.id)} className="min-h-[38px] px-2 py-2 text-red-600 hover:bg-red-50 hover:text-red-700">
-                          <Trash2 className="h-4 w-4 text-red-600" />
-                        </Button>
-                      </div>
+                      <LotDetailButton lang={lang} onClick={() => setSelectedLotId(lot.id)} compact />
                     </div>
-                    <div className="mt-3 grid grid-cols-2 gap-2">
-                      <div className="rounded-2xl border border-zinc-100 bg-zinc-50 px-3 py-2">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">{text.remaining}</p>
-                        <p className="mt-1 text-sm font-black text-zinc-900">{formatWeightDisplay(lot.remaining_weight_tons)}</p>
-                      </div>
-                      <div className="rounded-2xl border border-zinc-100 bg-zinc-50 px-3 py-2">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">{t.totalCost}</p>
-                        <p className="mt-1 text-sm font-black text-zinc-900">{formatCurrency(lot.total_cost)}</p>
-                      </div>
-                    </div>
-                    <div className="mt-3">
-                      <LotDetailButton lang={lang} onClick={() => setSelectedLotId(lot.id)} />
+                    <div className="mt-2.5 grid grid-cols-2 gap-1.5">
+                      <LotMetricBox
+                        label={text.remaining}
+                        value={formatWeightDisplay(lot.remaining_weight_tons)}
+                        tone="emerald"
+                      />
+                      <LotMetricBox
+                        label={t.totalCost}
+                        value={formatCurrency(lot.total_cost)}
+                        tone="amber"
+                      />
                     </div>
                   </div>
 
-                  <div className="hidden flex-col gap-4 border-b border-zinc-100 p-5 sm:flex">
-                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[1.4rem] bg-gradient-to-br from-sky-100 via-white to-emerald-100 shadow-sm">
-                      <Package className="h-6 w-6 text-sky-700" />
+                  <div className="hidden flex-col gap-3 border-b border-zinc-100 p-4 sm:flex">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[1.1rem] bg-gradient-to-br from-sky-100 via-white to-emerald-100 shadow-sm">
+                      <Package className="h-5 w-5 text-sky-700" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div className="min-w-0">
-                          <h3 className="break-words text-lg font-black text-zinc-900">{lot.product_name}</h3>
+                          <h3 className="min-w-0 break-words text-[16px] font-black text-zinc-900">{lot.product_name}</h3>
                           <LotSellerMeta
                             lot={lot}
                             sellerHasQualityIssue={sellerHasQualityIssue}
@@ -306,32 +308,29 @@ export default function InventoryPage({ ctx }) {
                             formatDateDisplay={formatDateDisplay}
                           />
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Button variant="ghost" onClick={() => handleDeleteLot(lot.id)} className="self-start text-red-600 hover:bg-red-50 hover:text-red-700">
-                            <Trash2 className="h-4 w-4 text-red-600" />
-                          </Button>
-                        </div>
+                        <LotDetailButton lang={lang} onClick={() => setSelectedLotId(lot.id)} compact />
                       </div>
-                      <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-                        <div className="rounded-2xl border border-zinc-100 bg-zinc-50 px-3 py-3">
-                          <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">{text.bought}</p>
-                          <p className="mt-1 text-sm font-black text-zinc-900">{formatWeightDisplay(lot.bought_weight_tons)}</p>
-                        </div>
-                        <div className="rounded-2xl border border-zinc-100 bg-zinc-50 px-3 py-3">
-                          <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">{text.sold}</p>
-                          <p className="mt-1 text-sm font-black text-zinc-900">{formatWeightDisplay(lot.sold_weight_tons)}</p>
-                        </div>
-                        <div className="rounded-2xl border border-zinc-100 bg-zinc-50 px-3 py-3">
-                          <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">{text.remaining}</p>
-                          <p className="mt-1 text-sm font-black text-zinc-900">{formatWeightDisplay(lot.remaining_weight_tons)}</p>
-                        </div>
-                        <div className="rounded-2xl border border-zinc-100 bg-zinc-50 px-3 py-3">
-                          <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">{t.totalCost}</p>
-                          <p className="mt-1 text-sm font-black text-zinc-900">{formatCurrency(lot.total_cost)}</p>
-                        </div>
-                      </div>
-                      <div className="mt-4">
-                        <LotDetailButton lang={lang} onClick={() => setSelectedLotId(lot.id)} />
+                      <div className="mt-3 grid grid-cols-2 gap-1.5 md:grid-cols-4">
+                        <LotMetricBox
+                          label={text.bought}
+                          value={formatWeightDisplay(lot.bought_weight_tons)}
+                          tone="sky"
+                        />
+                        <LotMetricBox
+                          label={text.sold}
+                          value={formatWeightDisplay(lot.sold_weight_tons)}
+                          tone="zinc"
+                        />
+                        <LotMetricBox
+                          label={text.remaining}
+                          value={formatWeightDisplay(lot.remaining_weight_tons)}
+                          tone="emerald"
+                        />
+                        <LotMetricBox
+                          label={t.totalCost}
+                          value={formatCurrency(lot.total_cost)}
+                          tone="amber"
+                        />
                       </div>
                     </div>
                   </div>

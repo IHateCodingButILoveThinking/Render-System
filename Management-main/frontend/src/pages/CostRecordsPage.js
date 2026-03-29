@@ -255,7 +255,7 @@ export default function CostRecordsPage({ ctx }) {
                         </span>
                         <span className="inline-flex items-center gap-1 text-xs font-semibold text-zinc-400">
                           <ReceiptText className="h-3.5 w-3.5" />
-                          {formatDateDisplay(cost.created_at || cost.cost_date)}
+                          {formatDateDisplay(cost.cost_date || cost.date)}
                         </span>
                       </div>
                       <p className="mt-3 text-xl font-black tracking-tight text-zinc-900">

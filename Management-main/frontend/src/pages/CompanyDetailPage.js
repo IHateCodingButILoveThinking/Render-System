@@ -6,6 +6,8 @@ import {
   ReceiptText,
   ScrollText,
   ShieldAlert,
+  TrendingUp,
+  WalletCards,
 } from 'lucide-react';
 import CompanyPaymentPage from './CompanyPaymentPage';
 import CompanyPaymentRecordsPage from './CompanyPaymentRecordsPage';
@@ -50,26 +52,50 @@ function ActionButton({ icon, title, subtitle, onClick, tone = 'sky' }) {
   );
 }
 
-function SummaryCard({ label, value, tone = 'zinc' }) {
+function SummaryCard({ label, value, tone = 'zinc', icon = null }) {
   const tones = {
     zinc: 'border-zinc-100 bg-white text-zinc-900',
     orange: 'border-orange-100 bg-orange-50/90 text-orange-800',
     emerald: 'border-emerald-100 bg-emerald-50/90 text-emerald-800',
     sky: 'border-sky-100 bg-sky-50/90 text-sky-800',
+    teal: 'border-teal-100 bg-teal-50/90 text-teal-800',
+    violet: 'border-violet-100 bg-violet-50/90 text-violet-800',
+    rose: 'border-rose-100 bg-rose-50/90 text-rose-800',
   };
   const labelTones = {
     zinc: 'text-zinc-400',
     orange: 'text-orange-600',
     emerald: 'text-emerald-600',
     sky: 'text-sky-600',
+    teal: 'text-teal-600',
+    violet: 'text-violet-600',
+    rose: 'text-rose-600',
+  };
+  const iconTones = {
+    zinc: 'bg-zinc-100 text-zinc-600',
+    orange: 'bg-orange-100 text-orange-600',
+    emerald: 'bg-emerald-100 text-emerald-600',
+    sky: 'bg-sky-100 text-sky-600',
+    teal: 'bg-teal-100 text-teal-600',
+    violet: 'bg-violet-100 text-violet-600',
+    rose: 'bg-rose-100 text-rose-600',
   };
 
   return (
-    <div className={`rounded-[1.15rem] border px-3 py-3 shadow-sm ${tones[tone] || tones.zinc}`}>
-      <p className={`text-[10px] font-bold uppercase tracking-widest ${labelTones[tone] || labelTones.zinc}`}>
-        {label}
-      </p>
-      <p className="mt-1.5 text-sm font-black sm:text-[15px]">{value}</p>
+    <div className={`rounded-[1rem] border px-3 py-2.5 ${tones[tone] || tones.zinc}`}>
+      <div className="flex items-center gap-2">
+        {icon ? (
+          <span
+            className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${iconTones[tone] || iconTones.zinc}`}
+          >
+            {icon}
+          </span>
+        ) : null}
+        <p className={`text-[9px] font-bold uppercase tracking-[0.18em] ${labelTones[tone] || labelTones.zinc}`}>
+          {label}
+        </p>
+      </div>
+      <p className="mt-1 text-[13px] font-black leading-tight sm:text-sm">{value}</p>
     </div>
   );
 }
@@ -124,6 +150,10 @@ export default function CompanyDetailPage({ ctx }) {
         )
         .sort((a, b) => new Date(b.payment_date || b.created_at) - new Date(a.payment_date || a.created_at)),
     [companySales]
+  );
+  const companyProfit = useMemo(
+    () => Number(company.total_sold_value || 0) - Number(company.total_bought_cost || 0),
+    [company.total_bought_cost, company.total_sold_value]
   );
 
   let content = null;
@@ -231,25 +261,36 @@ export default function CompanyDetailPage({ ctx }) {
             ) : null}
           </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-2.5 sm:gap-3">
+          <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-2.5 xl:grid-cols-5">
             <SummaryCard
               label={text.companyProcessingCost || (lang === 'zh' ? '原料+加工成本' : 'Material + Process Cost')}
               value={formatCurrency(company.total_bought_cost)}
               tone="sky"
+              icon={<ReceiptText className="h-3.5 w-3.5" />}
             />
             <SummaryCard
               label={text.soldValue}
               value={formatCurrency(company.total_sold_value)}
+              tone="violet"
+              icon={<Banknote className="h-3.5 w-3.5" />}
+            />
+            <SummaryCard
+              label={text.profitShort || (lang === 'zh' ? '利润' : 'Profit')}
+              value={formatCurrency(companyProfit)}
+              tone={companyProfit >= 0 ? 'emerald' : 'rose'}
+              icon={<TrendingUp className="h-3.5 w-3.5" />}
             />
             <SummaryCard
               label={text.received}
               value={formatCurrency(company.total_received)}
-              tone="emerald"
+              tone="teal"
+              icon={<WalletCards className="h-3.5 w-3.5" />}
             />
             <SummaryCard
               label={t.balanceOwed}
               value={formatCurrency(company.balance_owed)}
               tone={Number(company.balance_owed) > 0 ? 'orange' : 'zinc'}
+              icon={<ScrollText className="h-3.5 w-3.5" />}
             />
           </div>
         </div>

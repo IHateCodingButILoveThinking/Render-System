@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import {
   BusFront,
+  CalendarDays,
   Calculator,
   ChevronRight,
   CircleDollarSign,
   Droplets,
+  Grid3X3,
   Loader2,
+  NotebookPen,
   ReceiptText,
   Save,
   ShoppingBag,
@@ -16,6 +19,17 @@ import {
   Palmtree,
 } from 'lucide-react';
 import CostRecordsPage from './CostRecordsPage';
+
+function LabelWithIcon({ icon, text }) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span className="inline-flex h-4.5 w-4.5 items-center justify-center rounded-full bg-zinc-100 text-zinc-500">
+        {icon}
+      </span>
+      <span>{text}</span>
+    </span>
+  );
+}
 
 export default function CostsPage({ ctx }) {
   const {
@@ -35,8 +49,11 @@ export default function CostsPage({ ctx }) {
     Button,
     QuickChoicePills,
     formatDateDisplay,
+    formatDateTimeDisplay,
   } = ctx;
   const [showRecordsPage, setShowRecordsPage] = useState(false);
+  const operationalCostCount = (dashboard.operationalCosts || []).length;
+  const operationalCostCountLabel = operationalCostCount > 99 ? '99+' : String(operationalCostCount);
 
   const quickPickItems = [
     {
@@ -102,6 +119,7 @@ export default function CostsPage({ ctx }) {
       <CostRecordsPage
         ctx={{
           ...ctx,
+          formatDateTimeDisplay,
           onBack: () => setShowRecordsPage(false),
         }}
       />
@@ -114,25 +132,24 @@ export default function CostsPage({ ctx }) {
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 className="text-xl font-black tracking-tight">{text.operationalCosts}</h2>
-            <p className="mt-1 text-sm text-zinc-400">{text.operationalCostSubtitle}</p>
           </div>
           <button
             type="button"
             onClick={() => setShowRecordsPage(true)}
-            className="group inline-flex shrink-0 items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-bold text-sky-700 transition hover:border-sky-300 hover:bg-sky-100"
+            className="group inline-flex shrink-0 items-center gap-2 rounded-full border border-zinc-200 bg-white/95 px-2.5 py-2 text-left text-xs font-bold text-zinc-700 shadow-sm transition hover:-translate-y-0.5 hover:border-zinc-300 hover:bg-zinc-50 hover:shadow-md"
           >
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white text-sky-700 shadow-sm">
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-zinc-100 text-zinc-700 shadow-sm">
               <ReceiptText className="h-3.5 w-3.5" />
             </span>
-            <span className="flex items-center gap-1.5 whitespace-nowrap">
-              <span>
+            <span className="relative inline-flex min-w-0 items-center whitespace-nowrap pr-5">
+              <span className="block text-[12px] font-semibold tracking-tight text-zinc-800">
                 {text.operationalCostRecordsTitle || (lang === 'zh' ? '花销记录' : 'Cost Records')}
               </span>
-              <span className="inline-flex items-center rounded-full bg-white px-2 py-0.5 text-[11px] text-zinc-600 shadow-sm">
-                {(dashboard.operationalCosts || []).length}
+              <span className="pointer-events-none absolute -right-0.5 -top-1 inline-flex h-[1.1rem] min-w-[1.1rem] items-center justify-center rounded-full border border-white bg-zinc-900 px-1 text-[8px] font-bold leading-none text-white shadow-[0_6px_16px_rgba(15,23,42,0.16)]">
+                {operationalCostCountLabel}
               </span>
             </span>
-            <ChevronRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
+            <ChevronRight className="h-3.5 w-3.5 text-zinc-400 transition group-hover:translate-x-0.5 group-hover:text-zinc-600" />
           </button>
         </div>
 
@@ -140,13 +157,23 @@ export default function CostsPage({ ctx }) {
           <div className="rounded-[1.75rem] border border-zinc-200 bg-gradient-to-br from-zinc-50 via-white to-sky-50/40 p-4 shadow-sm">
             <div className="space-y-3">
               <Input
-                label={text.costType}
+                label={
+                  <LabelWithIcon
+                    icon={<ReceiptText className="h-2.5 w-2.5" />}
+                    text={text.costType}
+                  />
+                }
                 value={operationalCostForm.cost_type}
                 placeholder={text.costTypePlaceholder}
                 onChange={(event) => setOperationalCostForm((current) => ({ ...current, cost_type: event.target.value }))}
               />
               <QuickChoicePills
-                title={lang === 'zh' ? '快速选择' : 'Quick pick'}
+                title={
+                  <LabelWithIcon
+                    icon={<Grid3X3 className="h-2.5 w-2.5" />}
+                    text={lang === 'zh' ? '快速选择' : 'Quick pick'}
+                  />
+                }
                 items={quickPickItems}
                 activeValue={operationalCostForm.cost_type}
                 onSelect={(value) => setOperationalCostForm((current) => ({ ...current, cost_type: value }))}
@@ -157,7 +184,10 @@ export default function CostsPage({ ctx }) {
           <div className="space-y-3">
             <div className="rounded-[1.5rem] border border-zinc-200 bg-zinc-50/70 p-3">
               <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">
-                {text.calcMode}
+                <LabelWithIcon
+                  icon={<Calculator className="h-2.5 w-2.5" />}
+                  text={text.calcMode}
+                />
               </p>
               <div className="mt-3 grid grid-cols-2 gap-2">
                 <button
@@ -224,7 +254,12 @@ export default function CostsPage({ ctx }) {
               </div>
             </div>
             <Input
-              label={text.costDate}
+              label={
+                <LabelWithIcon
+                  icon={<CalendarDays className="h-2.5 w-2.5" />}
+                  text={text.costDate}
+                />
+              }
               type="date"
               value={operationalCostForm.cost_date}
               onChange={(event) => setOperationalCostForm((current) => ({ ...current, cost_date: event.target.value }))}
@@ -258,7 +293,12 @@ export default function CostsPage({ ctx }) {
             </div>
           ) : (
             <Input
-              label={t.amount}
+              label={
+                <LabelWithIcon
+                  icon={<CircleDollarSign className="h-2.5 w-2.5" />}
+                  text={t.amount}
+                />
+              }
               type="number"
               inputMode="decimal"
               step="0.01"
@@ -269,7 +309,12 @@ export default function CostsPage({ ctx }) {
           )}
 
           <Input
-            label={text.costNote}
+            label={
+              <LabelWithIcon
+                icon={<NotebookPen className="h-2.5 w-2.5" />}
+                text={text.costNote}
+              />
+            }
             value={operationalCostForm.note}
             onChange={(event) => setOperationalCostForm((current) => ({ ...current, note: event.target.value }))}
           />

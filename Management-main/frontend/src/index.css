@@ -1,1 +1,66 @@
 @import "tailwindcss";
+
+:root {
+  color-scheme: light;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .platform-windows body {
+    background: #f5f6f8;
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  }
+
+  .platform-windows [class*="rounded-[2rem]"] {
+    border-radius: 1.5rem !important;
+  }
+
+  .platform-windows [class*="rounded-[1.7rem]"] {
+    border-radius: 1.25rem !important;
+  }
+
+  .platform-windows [class*="rounded-3xl"] {
+    border-radius: 1.25rem !important;
+  }
+
+  .platform-windows [class*="rounded-2xl"] {
+    border-radius: 1rem !important;
+  }
+
+  .platform-windows [class*="shadow-xl"],
+  .platform-windows [class*="shadow-2xl"] {
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08) !important;
+  }
+
+  .platform-windows [class*="shadow-sm"] {
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05) !important;
+  }
+
+  .platform-windows [class*="backdrop-blur"] {
+    -webkit-backdrop-filter: blur(10px) !important;
+    backdrop-filter: blur(10px) !important;
+  }
+
+  .platform-windows header[class*="bg-white/85"] {
+    background: rgba(255, 255, 255, 0.96) !important;
+    border-bottom-color: rgba(212, 212, 216, 0.9) !important;
+  }
+
+  .platform-windows [class*="border-zinc-100"] {
+    border-color: rgba(212, 212, 216, 0.85) !important;
+  }
+
+  .platform-windows [class*="from-white"][class*="to-emerald-50/40"],
+  .platform-windows [class*="from-white"][class*="to-sky-50"],
+  .platform-windows [class*="from-zinc-50"][class*="to-sky-50/60"] {
+    background-image: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
+  }
+}

@@ -1,0 +1,65 @@
+import React from 'react';
+import { ArrowLeft, ScrollText } from 'lucide-react';
+
+export default function CompanySalesRecordsPage({ ctx }) {
+  const {
+    text,
+    lang,
+    company,
+    companySales,
+    formatDateDisplay,
+    formatWeightDisplay,
+    formatCurrency,
+    t,
+    onBack,
+  } = ctx;
+
+  return (
+    <section className="space-y-5">
+      <div className="rounded-[1.6rem] border border-zinc-100 bg-gradient-to-br from-zinc-50 via-white to-sky-50/70 p-4 shadow-sm sm:p-5">
+        <button
+          type="button"
+          onClick={onBack}
+          className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          {lang === 'zh' ? '返回公司详情' : 'Back to Company Detail'}
+        </button>
+        <div className="mt-4 flex items-center gap-3">
+          <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-700">
+            <ScrollText className="h-4 w-4" />
+          </span>
+          <div>
+            <h2 className="text-base font-black tracking-tight text-zinc-900">{text.salesHistoryTitle}</h2>
+            <p className="mt-1 text-xs text-zinc-500">{company.name} • {companySales.length} {text.sales}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-[1.6rem] border border-zinc-100 bg-white p-4 shadow-sm sm:p-5">
+        <div className="space-y-2.5">
+          {companySales.length === 0 ? (
+            <p className="text-sm text-zinc-400">{text.noSalesForCompany}</p>
+          ) : (
+            companySales.map((sale) => (
+              <div key={sale.id} className="rounded-[1.25rem] border border-zinc-100 bg-zinc-50/80 p-3.5">
+                <div className="flex flex-col gap-2.5 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="break-words text-sm font-black text-zinc-900">{sale.lot_product_name}</p>
+                    <p className="mt-1 break-words text-xs text-zinc-500">
+                      {formatDateDisplay(sale.sale_date)} • {formatWeightDisplay(sale.sold_weight_tons)}
+                    </p>
+                  </div>
+                  <div className="sm:text-right">
+                    <p className="text-base font-black text-zinc-900">{formatCurrency(sale.sale_value)}</p>
+                    <p className="text-[11px] text-zinc-400">{t.balanceOwed} {formatCurrency(sale.outstanding_amount)}</p>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}

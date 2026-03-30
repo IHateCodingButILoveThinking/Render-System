@@ -721,7 +721,7 @@ function CompanyDisciplineTable({ title, subtitle, companies, emptyLabel, lang, 
 
   return (
     <div className="max-w-full rounded-[2rem] border border-stone-200 bg-[radial-gradient(circle_at_top_left,_rgba(254,243,199,0.4),_transparent_28%),linear-gradient(180deg,_rgba(255,255,255,0.98),_rgba(250,250,249,0.97)_100%)] p-4 shadow-[0_20px_60px_-42px_rgba(120,113,108,0.22)] sm:p-5">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_220px] xl:items-start">
         <div className="min-w-0">
           <span className="inline-flex items-center rounded-full border border-stone-200 bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-stone-700">
             {lang === 'zh' ? '公司收款风向' : 'Payment Radar'}
@@ -729,7 +729,7 @@ function CompanyDisciplineTable({ title, subtitle, companies, emptyLabel, lang, 
           <h3 className="mt-3 text-xl font-black tracking-tight text-zinc-950">{title}</h3>
           <p className="mt-1 max-w-lg text-sm leading-6 text-zinc-500">{subtitle}</p>
         </div>
-        <div className="grid max-w-sm flex-1 grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2 xl:w-[220px]">
           <div className="rounded-[1.2rem] border border-white/80 bg-white/90 px-3.5 py-3 shadow-sm">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
               {lang === 'zh' ? '待跟进公司' : 'Watchlist'}
@@ -762,7 +762,7 @@ function CompanyDisciplineTable({ title, subtitle, companies, emptyLabel, lang, 
                     <p className="break-words text-[15px] font-black text-zinc-950">{company.name}</p>
                   </div>
                   <p className="mt-1 text-[11px] text-zinc-400">
-                    {company.bad_credit ? company.badCreditFlaggedLabel : company.creditStatusNormalLabel} • {company.sales.length} {company.salesLabel}
+                    {company.bad_credit ? company.badCreditFlaggedLabel : company.creditStatusNormalLabel} • {(company.sales || []).length} {company.salesLabel}
                   </p>
                 </div>
                 <div className="sm:text-right">
@@ -917,7 +917,7 @@ function CompanyPerformanceBoard({ title, subtitle, rows, emptyLabel, soldLabel,
         <div className="absolute -top-8 right-6 h-28 w-28 rounded-full bg-sky-200/25 blur-3xl" />
         <div className="absolute bottom-0 left-0 h-24 w-24 rounded-full bg-indigo-100/30 blur-3xl" />
       </div>
-      <div className="relative flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div className="relative grid gap-4 xl:grid-cols-[minmax(0,1fr)_220px] xl:items-start">
         <div className="min-w-0">
           <span className="inline-flex items-center rounded-full border border-sky-100 bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-sky-700">
             {lang === 'zh' ? '市场表现' : 'Market Pulse'}
@@ -925,7 +925,7 @@ function CompanyPerformanceBoard({ title, subtitle, rows, emptyLabel, soldLabel,
           <h3 className="mt-3 text-xl font-black tracking-tight text-zinc-950">{title}</h3>
           <p className="mt-1 max-w-lg text-sm leading-6 text-zinc-500">{subtitle}</p>
         </div>
-        <div className="grid max-w-sm flex-1 grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2 xl:w-[220px]">
           <div className="rounded-[1.2rem] border border-white bg-white/90 px-3.5 py-3 shadow-sm">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
               {lang === 'zh' ? '领先公司' : 'Leader'}
@@ -1121,6 +1121,7 @@ export default function AnalyticsDashboard({ dashboard, text, lang }) {
       monthly,
       companies: companies.map((company) => ({
         ...company,
+        sales: company.sales || [],
         badCreditFlaggedLabel: text.badCreditFlagged || 'Bad credit flagged',
         creditStatusNormalLabel: text.creditStatusNormal || 'Credit status normal',
         outstandingBalanceLabel: text.outstandingBalance || 'Outstanding balance',
